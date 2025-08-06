@@ -11,6 +11,7 @@ manifest:
         # By using name-allowlist we can clone only the modules that are
         # strictly needed by the application.
         name-allowlist:
-          - cmsis      # required by the ARM port
-          - hal_nordic # required by the nordic boards
-          - hal_stm32  # required by the nucleo boards
+          - cmsis_6    # required by the ARM port for Cortex-M
+          - hal_nordic # required by Nordic boards
+          - hal_stm32  # required by STM32 boards
+          - loramac-node
