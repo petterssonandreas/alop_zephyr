@@ -1,0 +1,197 @@
+/dts-v1/;
+#include <st/g0/stm32g0b0Xe.dtsi>
+#include <st/g0/stm32g0b0ketx-pinctrl.dtsi>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
+/ {
+	model = "CT G0B0KE board";
+	compatible = "st,stm32g0b0ke-ct";
+
+	chosen {
+		zephyr,console = &usart1;
+		zephyr,shell-uart = &usart1;
+		zephyr,uart-mcumgr = &usart1;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
+		zephyr,display = &ssd1306;
+	};
+
+	buzzers: buzzers {
+		// We need some kind of compatible. Instead of defining our own, use the gpios-leds.
+		compatible = "gpio-leds";
+		buzzer_0: buzzer_0 {
+			gpios = <&gpioa 7 GPIO_ACTIVE_HIGH>;
+			label = "Active Buzzer";
+		};
+	};
+
+	pwmleds {
+		compatible = "pwm-leds";
+		pwm_led0: pwm_led_0 {
+			pwms = <&pwm3 1 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		user_button_a: button_a {
+			label = "Button A";
+			gpios = <&gpioa 3 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			zephyr,code = <INPUT_KEY_A>;
+		};
+		user_button_b: button_b {
+			label = "Button B";
+			gpios = <&gpioa 4 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			zephyr,code = <INPUT_KEY_B>;
+		};
+		user_button_c: button_c {
+			label = "Button C";
+			gpios = <&gpioa 5 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			zephyr,code = <INPUT_KEY_C>;
+		};
+		jack_conn: jack_conn {
+			label = "Audio Jack Connected";
+			gpios = <&gpioa 8 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+		};
+	};
+
+	aliases {
+		sw0 = &user_button_a;
+		swa = &user_button_a;
+		swb = &user_button_b;
+		swc = &user_button_c;
+		jack-connected = &jack_conn;
+		uiled = &pwm_led0;
+		buzzer = &buzzer_0;
+		rtc = &rtc;
+		adc1 = &adc1;
+		lora0 = &lora;
+	};
+};
+
+&clk_lsi {
+	status = "okay";
+};
+
+&clk_hsi {
+	status = "okay";
+};
+
+&pll {
+	div-m = <1>;
+	mul-n = <8>;
+	div-p = <2>;
+	div-q = <2>;
+	div-r = <2>;
+	clocks = <&clk_hsi>;
+	status = "okay";
+};
+
+&rcc {
+	clocks = <&pll>;
+	clock-frequency = <DT_FREQ_M(64)>;
+	ahb-prescaler = <1>;
+	apb1-prescaler = <1>;
+};
+
+&usart1 {
+	pinctrl-0 = <&usart1_tx_pb6 &usart1_rx_pb7>;
+	pinctrl-names = "default";
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&rtc {
+	clocks = <&rcc STM32_CLOCK_BUS_APB1 0x00000400>,
+			 <&rcc STM32_SRC_LSI RTC_SEL(2)>;
+	status = "okay";
+};
+
+&timers3 {
+	st,prescaler = <10000>;
+	status = "okay";
+	pwm3: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim3_ch1_pa6>;
+		pinctrl-names = "default";
+	};
+};
+
+&i2c1 {
+	pinctrl-0 = <&i2c1_scl_pa9 &i2c1_sda_pa10>;
+	pinctrl-names = "default";
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;
+
+	ssd1306: ssd1306@3c {
+		compatible = "solomon,ssd1306fb";
+		reg = <0x3c>;
+		width = <128>;
+		height = <64>;
+		segment-offset = <0>;
+		page-offset = <0>;
+		display-offset = <0>;
+		multiplex-ratio = <63>;
+		segment-remap;
+		com-invdir;
+		prechargep = <0x22>;
+	};
+};
+
+&spi1 {
+	pinctrl-0 = <&spi1_nss_pb0 &spi1_sck_pb3 &spi1_miso_pb4 &spi1_mosi_pb5>;
+	pinctrl-names = "default";
+	status = "okay";
+	cs-gpios = <&gpiob 8 GPIO_ACTIVE_LOW>;
+
+	lora: radio@0 {
+		compatible = "semtech,sx1276";
+		reg = <0>;
+		reset-gpios = <&gpiob 9 GPIO_ACTIVE_LOW>;
+		dio-gpios = <&gpioa 0 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>; /* Used for TX done interrupt */
+		spi-max-frequency = <1000000>;
+		power-amplifier-output = "pa-boost";
+	};
+};
+
+&adc1 {
+	pinctrl-0 = <&adc1_in2_pa2 &adc1_in10_pb2>;
+	pinctrl-names = "default";
+	st,adc-clock-source = "SYNC";
+	st,adc-prescaler = <4>;
+	status = "okay";
+};
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x00000000 DT_SIZE_K(48)>;
+			read-only;
+		};
+		slot0_partition: partition@C000 {
+			label = "image-0";
+			reg = <0x0000C000 DT_SIZE_K(200)>;
+		};
+		slot1_partition: partition@3E000 {
+			label = "image-1";
+			reg = <0x0003E000 DT_SIZE_K(200)>;
+		};
+		/* final 64KiB reserved for app storage partition */
+		storage_partition: partition@70000 {
+			label = "storage";
+			reg = <0x00070000 DT_SIZE_K(64)>;
+		};
+	};
+};
+
+stm32_lp_tick_source: &lptim1 {
+	clocks = <&rcc STM32_CLOCK_BUS_APB1 0x80000000>,
+			 <&rcc STM32_SRC_LSI LPTIM1_SEL(1)>;
+	status = "okay";
+};

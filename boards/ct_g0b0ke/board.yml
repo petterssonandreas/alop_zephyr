@@ -1,0 +1,6 @@
+board:
+  name: ct_g0b0ke
+  full_name: CT G0B0KE
+  vendor: st
+  socs:
+    - name: stm32g0b0xx

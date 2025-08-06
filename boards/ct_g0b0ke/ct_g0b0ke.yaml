@@ -1,0 +1,19 @@
+identifier: ct_g0b0ke
+name: CT G0B0KE
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+ram: 144
+flash: 512
+supported:
+  - adc
+  - uart
+  - gpio
+  - i2c
+  - spi
+  - nvs
+  - dma
+vendor: alop

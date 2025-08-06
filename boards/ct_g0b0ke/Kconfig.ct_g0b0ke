@@ -1,0 +1,2 @@
+config BOARD_CT_G0B0KE
+	select SOC_STM32G0B0XX
