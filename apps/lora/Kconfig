@@ -1,0 +1,9 @@
+menu "LORA app configuration"
+
+module = LORA_MAIN
+module-str = LORA-Main
+source "subsys/logging/Kconfig.template.log_config"
+
+endmenu
+
+source "Kconfig.zephyr"
